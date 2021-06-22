@@ -1,0 +1,28 @@
+---
+- name: Replace ntp servers
+  host: all
+  gather_facts: False
+
+  tasks:
+
+    - name: get running config
+      ios_command:
+        commands:
+          - sho run
+      register: _config
+
+    - name: extract ntp configuration
+      set_fact: _ntp_servers="{{ _config.stdout[0] | regex_findall('^ntp server (\S+)', multiline=True) }}"
+
+    - name: remove ntp servers
+      ios_config:
+        lines:
+          - "no ntp server {{ item }}"
+      loop: "{{ _ntp_servers }}"
+
+    - name: set ntp server
+      ios_config:
+        lines:
+          - ntp server {{ item }}
+      loop: "{{ ntp_servers }}"
+...
